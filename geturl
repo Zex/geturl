@@ -1,0 +1,100 @@
+#!/bin/bash
+#
+# geturl
+#
+# Author: Zex.Li <top_zlynch@yahoo.com>
+# 
+# Get web pages which are linked by present site or web page
+#
+# Sample:
+#    geturl -a http://www.linuxtv.org/downloads/v4l-dvb-apis -d /home/downloads
+#    geturl -f Introduction\ to\ Video\ for\ Linux.html -d /media/Left
+#
+
+function usage()
+{
+	echo "geturl [option] [value]"
+	echo
+	echo "option"
+	echo "    -a,--http-addr    site address"
+	echo "    -f,--html-file    path to html file"
+	echo "    -d,--target-dir   where to save downloaded files" 
+	echo "                      [default:`pwd`]"
+	exit 0
+}
+
+function onError()
+{
+	echo "geturl[ERROR]: $1"
+}
+
+function rtInfo()
+{
+	echo "geturl[INFO]: $1"
+}
+
+function get_files_from_html_file()
+{
+	echo "getting URL from $html_file"
+	urls=`sed 's/"http/\nhttp/g' "$html_file" |sed 's/\.html/\.html\n/g'|grep http:|uniq`
+
+	pushd $target_dir
+	for u in $urls ;do
+		echo "getting [$u]"
+		wget -x $u
+	done
+	popd
+}
+
+function get_files_from_site()
+{
+	pushd $target_dir
+
+	wget -r $http_addr
+
+	popd
+}
+
+function option_check()
+{
+	params=`getopt -o a:f:d: -l http-addr:,html-file:,target-dir: -- "$@"`
+	
+	eval set -- "$params"
+	
+	while true ;do
+		case $1 in
+		-a|--http-addr)
+			http_addr=$2;
+			site_name=`echo $http_addr|awk -F/ '{print $1$2"//"$3;}'`;
+			shift 2;;
+		-f|--html-file)html_file=$2;shift 2;;
+		-d|--target-dir)target_dir=$2;shift 2;;
+		--)shift;break;;
+		*)usage;;
+		esac
+	done
+}
+
+function params_check()
+{
+	[ ! -z $html_file ] && [ ! -z $http_addr ] && onError "option -a and -f must not be used together" && exit -1
+	[ -z $target_dir ] && target_dir=`pwd`
+}
+
+option_check $@
+params_check
+
+if [ ! -z $html_file ] ;then
+	get_files_from_html_file
+fi
+
+if [ ! -z $http_addr ] ;then
+	get_files_from_site
+fi
+
+rtInfo "download finished!"
+
+
+
+
+
