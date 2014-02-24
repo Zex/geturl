@@ -57,6 +57,8 @@ function get_files_from_site()
 
 function option_check()
 {
+	if [ -z $@ ] ; then usage; exit 0; fi
+
 	params=`getopt -o a:f:d: -l http-addr:,html-file:,target-dir: -- "$@"`
 	
 	eval set -- "$params"
